@@ -16,14 +16,23 @@ impl Item {
     pub fn link(&self) -> String {
         self.property("link")
     }
+
+    pub fn read(&self) -> bool {
+        self.property("read")
+    }
+
+    pub fn set_read(&self, read: bool) {
+        self.set_property("read", read);
+        self.notify("read");
+    }
 }
 
 mod imp {
-    use std::cell::RefCell;
+    use std::cell::{Cell, RefCell};
 
     use glib::{
         subclass::{prelude::ObjectImpl, types::ObjectSubclass},
-        ParamSpec, ParamSpecString, ToValue,
+        ParamSpec, ParamSpecBoolean, ParamSpecString, ToValue,
     };
     use once_cell::sync::Lazy;
 
@@ -31,6 +40,7 @@ mod imp {
     pub struct Item {
         pub title: RefCell<String>,
         pub link: RefCell<String>,
+        pub read: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -46,6 +56,7 @@ mod imp {
                 vec![
                     ParamSpecString::builder("title").build(),
                     ParamSpecString::builder("link").build(),
+                    ParamSpecBoolean::builder("read").build(),
                 ]
             });
 
@@ -68,6 +79,10 @@ mod imp {
                     let link = value.get().unwrap();
                     self.link.replace(link);
                 }
+                "read" => {
+                    let read = value.get().unwrap();
+                    self.read.replace(read);
+                }
                 _ => unimplemented!(),
             }
         }
@@ -76,6 +91,7 @@ mod imp {
             match pspec.name() {
                 "title" => self.title.borrow().to_value(),
                 "link" => self.link.borrow().to_value(),
+                "read" => self.read.get().to_value(),
                 _ => unimplemented!(),
             }
         }

@@ -636,6 +636,7 @@ name = "gui"
 version = "0.1.0"
 dependencies = [
  "feeds",
+ "gio",
  "gtk4",
  "libadwaita",
  "storage",

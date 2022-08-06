@@ -1,0 +1,9 @@
+.read-toggle check {
+    background-color: @green_5;
+    border-radius: 20px;
+}
+
+.read-toggle:checked check {
+    background-color: @bg_color;
+    opacity: 0.5;
+}

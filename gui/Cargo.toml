@@ -16,3 +16,6 @@ path = "../feeds"
 
 [dependencies.storage]
 path = "../storage"
+
+[build-dependencies]
+gio = "0.15.12"
