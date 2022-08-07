@@ -16,6 +16,13 @@ fn main() {
     application.run();
 }
 
+fn escape_markdown(mrkd: String) -> String {
+    mrkd.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+}
+
 fn fetch_model() -> storage::Channel {
     let rss_channel = futures::block_on(feeds::fetch_channel(feeds::DEMO_URL)).unwrap();
 
@@ -59,14 +66,17 @@ fn setup(app: &adw::Application) {
 
     let window = adw::ApplicationWindow::builder()
         .application(app)
-        .default_width(350)
-        .default_height(600)
+        .default_width(600)
+        .default_height(800)
         .content(&leaflet)
         .build();
     window.show();
 }
 
 fn list_channels(leaflet: &adw::Leaflet) -> impl IsA<gtk::Widget> {
+    let model = storage::ChannelsModel::default();
+    model.append(&fetch_model());
+
     let row = adw::ActionRow::builder()
         .activatable(true)
         .title("Click me")
@@ -81,20 +91,10 @@ fn list_channels(leaflet: &adw::Leaflet) -> impl IsA<gtk::Widget> {
     let menu_button = gtk::Button::builder()
         .icon_name("open-menu-symbolic")
         .build();
-    let refresh_button = gtk::Button::builder()
-        .icon_name("view-refresh-symbolic")
-        .build();
 
-    let model = fetch_model();
-    let title = gtk::Label::builder()
-        .label(&model.title())
-        .css_classes(vec!["title".into()])
-        .build();
-
-    let header = adw::HeaderBar::builder().title_widget(&title).build();
+    let header = adw::HeaderBar::builder().build();
     header.pack_start(&add_button);
     header.pack_end(&menu_button);
-    header.pack_end(&refresh_button);
     leaflet
         .bind_property("folded", &header, "show-end-title-buttons")
         .build();
@@ -103,40 +103,14 @@ fn list_channels(leaflet: &adw::Leaflet) -> impl IsA<gtk::Widget> {
         .selection_mode(gtk::SelectionMode::None)
         .build();
 
-    list.bind_model(Some(&model.items()), |item| {
-        let item = item.clone().downcast::<storage::Item>().unwrap();
-
-        let title = gtk::Label::builder()
-            .label(&item.title())
-            .use_markup(false)
-            .css_classes(vec!["title".to_string()])
-            .wrap(true)
-            .build();
-
-        let toggle = gtk::CheckButton::builder()
-            .css_classes(vec!["read-toggle".into()])
-            .build();
-        toggle
-            .bind_property("active", &item, "read")
-            .flags(BindingFlags::BIDIRECTIONAL)
-            .build();
-
-        let content = gtk::Box::builder()
-            .orientation(gtk::Orientation::Horizontal)
-            .spacing(8)
-            .halign(gtk::Align::Start)
-            .margin_top(8)
-            .margin_end(12)
-            .margin_bottom(8)
-            .margin_start(12)
-            .build();
-
-        content.append(&toggle);
-        content.append(&title);
+    list.bind_model(Some(&model), |item| {
+        let channel = item.clone().downcast::<storage::Channel>().unwrap();
 
         let row = adw::ActionRow::builder()
             .activatable(true)
-            .child(&content)
+            .title(&escape_markdown(channel.title()))
+            .subtitle(&escape_markdown(channel.description()))
+            .subtitle_lines(1)
             .build();
 
         row.connect_activated(move |row| {
@@ -145,8 +119,7 @@ fn list_channels(leaflet: &adw::Leaflet) -> impl IsA<gtk::Widget> {
                 .unwrap()
                 .downcast::<adw::ApplicationWindow>()
                 .unwrap();
-            gtk::show_uri(Some(&window), &item.link(), gtk::gdk::CURRENT_TIME);
-            item.set_read(true);
+            gtk::show_uri(Some(&window), &channel.link(), gtk::gdk::CURRENT_TIME);
         });
 
         row.upcast()
@@ -160,7 +133,7 @@ fn list_channels(leaflet: &adw::Leaflet) -> impl IsA<gtk::Widget> {
 
     let content = gtk::Box::builder()
         .orientation(gtk::Orientation::Vertical)
-        .hexpand(true)
+        .width_request(200)
         .build();
     content.append(&header);
     content.append(&scrolled_list);
@@ -169,6 +142,8 @@ fn list_channels(leaflet: &adw::Leaflet) -> impl IsA<gtk::Widget> {
 }
 
 fn list_items(leaflet: &adw::Leaflet) -> impl IsA<gtk::Widget> {
+    let model = fetch_model();
+
     let row = adw::ActionRow::builder()
         .activatable(true)
         .title("Click me")
@@ -177,29 +152,28 @@ fn list_items(leaflet: &adw::Leaflet) -> impl IsA<gtk::Widget> {
         eprintln!("Clicked!");
     });
 
-    let add_button = gtk::Button::builder()
-        .icon_name("list-add-symbolic")
-        .build();
-    let menu_button = gtk::Button::builder()
-        .icon_name("open-menu-symbolic")
+    let back_button = gtk::Button::builder()
+        .icon_name("go-previous-symbolic")
         .build();
     let refresh_button = gtk::Button::builder()
         .icon_name("view-refresh-symbolic")
         .build();
-
-    let model = fetch_model();
     let title = gtk::Label::builder()
         .label(&model.title())
         .css_classes(vec!["title".into()])
         .build();
 
     let header = adw::HeaderBar::builder().title_widget(&title).build();
-    header.pack_start(&add_button);
-    header.pack_end(&menu_button);
+    header.pack_start(&back_button);
     header.pack_end(&refresh_button);
+
     leaflet
         .bind_property("folded", &header, "show-end-title-buttons")
-        .flags(BindingFlags::INVERT_BOOLEAN)
+        .flags(BindingFlags::INVERT_BOOLEAN | BindingFlags::SYNC_CREATE)
+        .build();
+    leaflet
+        .bind_property("folded", &back_button, "visible")
+        .flags(BindingFlags::SYNC_CREATE)
         .build();
 
     let list = gtk::ListBox::builder()
@@ -209,13 +183,6 @@ fn list_items(leaflet: &adw::Leaflet) -> impl IsA<gtk::Widget> {
     list.bind_model(Some(&model.items()), |item| {
         let item = item.clone().downcast::<storage::Item>().unwrap();
 
-        let title = gtk::Label::builder()
-            .label(&item.title())
-            .use_markup(false)
-            .css_classes(vec!["title".to_string()])
-            .wrap(true)
-            .build();
-
         let toggle = gtk::CheckButton::builder()
             .css_classes(vec!["read-toggle".into()])
             .build();
@@ -224,23 +191,12 @@ fn list_items(leaflet: &adw::Leaflet) -> impl IsA<gtk::Widget> {
             .flags(BindingFlags::BIDIRECTIONAL)
             .build();
 
-        let content = gtk::Box::builder()
-            .orientation(gtk::Orientation::Horizontal)
-            .spacing(8)
-            .halign(gtk::Align::Start)
-            .margin_top(8)
-            .margin_end(12)
-            .margin_bottom(8)
-            .margin_start(12)
-            .build();
-
-        content.append(&toggle);
-        content.append(&title);
-
         let row = adw::ActionRow::builder()
             .activatable(true)
-            .child(&content)
+            .title(&escape_markdown(item.title()))
             .build();
+
+        row.add_prefix(&toggle);
 
         row.connect_activated(move |row| {
             let window = row
