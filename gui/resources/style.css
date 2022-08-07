@@ -5,5 +5,5 @@
 
 .read-toggle:checked check {
     background-color: @bg_color;
-    opacity: 0.5;
+    color: @theme_fg_color;
 }
