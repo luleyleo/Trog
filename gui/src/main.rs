@@ -1,15 +1,12 @@
 use adw::prelude::*;
-
-use adw::{ActionRow, Application, ApplicationWindow, HeaderBar};
 use gtk::glib::BindingFlags;
-use gtk::{Box, Button, CheckButton, ListBox, Orientation, SelectionMode};
 
 mod futures;
 
 fn main() {
     gtk::init().unwrap();
 
-    let application = Application::builder()
+    let application = adw::Application::builder()
         .application_id("de.leopoldluley.Trog")
         .build();
 
@@ -54,8 +51,8 @@ fn load_resources(_app: &adw::Application) {
     );
 }
 
-fn setup(app: &Application) {
-    let row = ActionRow::builder()
+fn setup(app: &adw::Application) {
+    let row = adw::ActionRow::builder()
         .activatable(true)
         .title("Click me")
         .build();
@@ -63,17 +60,23 @@ fn setup(app: &Application) {
         eprintln!("Clicked!");
     });
 
-    let add_button = Button::builder().icon_name("list-add-symbolic").build();
-    let menu_button = Button::builder().icon_name("open-menu-symbolic").build();
-    let refresh_button = Button::builder().icon_name("view-refresh-symbolic").build();
+    let add_button = gtk::Button::builder()
+        .icon_name("list-add-symbolic")
+        .build();
+    let menu_button = gtk::Button::builder()
+        .icon_name("open-menu-symbolic")
+        .build();
+    let refresh_button = gtk::Button::builder()
+        .icon_name("view-refresh-symbolic")
+        .build();
 
-    let header = HeaderBar::new();
+    let header = adw::HeaderBar::new();
     header.pack_start(&add_button);
     header.pack_end(&menu_button);
     header.pack_end(&refresh_button);
 
-    let list = ListBox::builder()
-        .selection_mode(SelectionMode::None)
+    let list = gtk::ListBox::builder()
+        .selection_mode(gtk::SelectionMode::None)
         .build();
 
     let model = fetch_model();
@@ -87,7 +90,7 @@ fn setup(app: &Application) {
             .wrap(true)
             .build();
 
-        let toggle = CheckButton::builder()
+        let toggle = gtk::CheckButton::builder()
             .css_classes(vec!["read-toggle".into()])
             .build();
         toggle
@@ -108,13 +111,17 @@ fn setup(app: &Application) {
         content.append(&toggle);
         content.append(&title);
 
-        let row = ActionRow::builder()
+        let row = adw::ActionRow::builder()
             .activatable(true)
             .child(&content)
             .build();
 
         row.connect_activated(move |row| {
-            let window = row.root().unwrap().downcast::<ApplicationWindow>().unwrap();
+            let window = row
+                .root()
+                .unwrap()
+                .downcast::<adw::ApplicationWindow>()
+                .unwrap();
             gtk::show_uri(Some(&window), &item.link(), gtk::gdk::CURRENT_TIME);
             item.set_read(true);
         });
@@ -128,11 +135,11 @@ fn setup(app: &Application) {
         .vexpand(true)
         .build();
 
-    let content = Box::new(Orientation::Vertical, 0);
+    let content = gtk::Box::new(gtk::Orientation::Vertical, 0);
     content.append(&header);
     content.append(&scrolled_list);
 
-    let window = ApplicationWindow::builder()
+    let window = adw::ApplicationWindow::builder()
         .application(app)
         .title(&model.title())
         .default_width(350)
