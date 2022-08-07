@@ -52,6 +52,16 @@ fn load_resources(_app: &adw::Application) {
 }
 
 fn setup(app: &adw::Application) {
+    let window = adw::ApplicationWindow::builder()
+        .application(app)
+        .default_width(350)
+        .default_height(600)
+        .content(&list())
+        .build();
+    window.show();
+}
+
+fn list() -> impl IsA<gtk::Widget> {
     let row = adw::ActionRow::builder()
         .activatable(true)
         .title("Click me")
@@ -70,7 +80,13 @@ fn setup(app: &adw::Application) {
         .icon_name("view-refresh-symbolic")
         .build();
 
-    let header = adw::HeaderBar::new();
+    let model = fetch_model();
+    let title = gtk::Label::builder()
+        .label(&model.title())
+        .css_classes(vec!["title".into()])
+        .build();
+
+    let header = adw::HeaderBar::builder().title_widget(&title).build();
     header.pack_start(&add_button);
     header.pack_end(&menu_button);
     header.pack_end(&refresh_button);
@@ -79,7 +95,6 @@ fn setup(app: &adw::Application) {
         .selection_mode(gtk::SelectionMode::None)
         .build();
 
-    let model = fetch_model();
     list.bind_model(Some(&model.items()), |item| {
         let item = item.clone().downcast::<storage::Item>().unwrap();
 
@@ -139,12 +154,5 @@ fn setup(app: &adw::Application) {
     content.append(&header);
     content.append(&scrolled_list);
 
-    let window = adw::ApplicationWindow::builder()
-        .application(app)
-        .title(&model.title())
-        .default_width(350)
-        .default_height(600)
-        .content(&content)
-        .build();
-    window.show();
+    content
 }
