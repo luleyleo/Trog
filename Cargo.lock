@@ -636,6 +636,7 @@ name = "gui"
 version = "0.1.0"
 dependencies = [
  "feeds",
+ "gdk-pixbuf",
  "gio",
  "gtk4",
  "libadwaita",
@@ -1136,6 +1137,7 @@ dependencies = [
 name = "storage"
 version = "0.1.0"
 dependencies = [
+ "gdk-pixbuf",
  "gio",
  "glib",
  "once_cell",

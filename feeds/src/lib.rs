@@ -7,7 +7,14 @@ pub async fn fetch_channel(url: &str) -> Result<Channel, FetchError> {
     let content = response.bytes().await?;
     let channel = rss::Channel::read_from(content.as_slice())?;
 
-    Ok(Channel::from(channel))
+    let mut image = None;
+    if let Some(img) = &channel.image {
+        let mut response = isahc::get_async(&img.url).await?;
+        let data = response.bytes().await?;
+        image = Some(data);
+    }
+
+    Ok(Channel::from(channel, image))
 }
 
 #[derive(Debug)]
@@ -35,13 +42,14 @@ impl From<rss::Error> for FetchError {
 #[derive(Debug)]
 pub struct Channel {
     pub title: String,
+    pub image: Option<Vec<u8>>,
     pub link: String,
     pub description: String,
     pub items: Vec<Item>,
 }
 
-impl From<rss::Channel> for Channel {
-    fn from(channel: rss::Channel) -> Self {
+impl Channel {
+    fn from(channel: rss::Channel, image: Option<Vec<u8>>) -> Self {
         let items = channel
             .items
             .into_iter()
@@ -52,6 +60,7 @@ impl From<rss::Channel> for Channel {
 
         Channel {
             title: channel.title,
+            image,
             link: channel.link,
             description: channel.description,
             items,

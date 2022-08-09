@@ -1,4 +1,9 @@
 use adw::prelude::*;
+use gdk_pixbuf::{
+    gio::{Cancellable, MemoryInputStream},
+    glib::Bytes,
+    Pixbuf,
+};
 use gtk::glib::{clone, BindingFlags};
 use storage::AppModel;
 
@@ -32,6 +37,13 @@ fn fetch_model() -> storage::Channel {
         &rss_channel.link,
         &rss_channel.description,
     );
+
+    if let Some(image) = rss_channel.image {
+        let bytes = Bytes::from_owned(image);
+        let stream = MemoryInputStream::from_bytes(&bytes);
+        let pixbuf = &Pixbuf::from_stream(&stream, None::<&Cancellable>).unwrap();
+        channel.set_image(pixbuf);
+    }
 
     for rss_item in rss_channel.items {
         let item = storage::Item::new(&rss_item.title, &rss_item.link);
@@ -120,6 +132,8 @@ fn list_channels(leaflet: &adw::Leaflet, model: &AppModel) -> impl IsA<gtk::Widg
                 .subtitle(&escape_markdown(channel.description()))
                 .subtitle_lines(1)
                 .build();
+
+            row.add_prefix(&gtk::Image::from_pixbuf(Some(&channel.image())));
 
             row.connect_activated(clone!(@strong leaflet, @strong model, @strong channel => move |_| {
                 model.set_title(&channel.title());

@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
+    <gresource prefix="/de/leopoldluley/trog/icons/scalable/actions/">
+        <file preprocess="xml-stripblanks">application-rss-symbolic.svg</file>
+    </gresource>
     <gresource prefix="/de/leopoldluley/trog">
         <file>style.css</file>
     </gresource>

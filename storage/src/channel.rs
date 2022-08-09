@@ -1,6 +1,10 @@
+use gdk_pixbuf::Pixbuf;
 use glib::ObjectExt;
 
 use crate::items::ItemsModel;
+
+const DEFAULT_IMAGE: &str =
+    "/de/leopoldluley/trog/icons/scalable/actions/application-rss-symbolic.svg";
 
 glib::wrapper! {
     pub struct Channel(ObjectSubclass<imp::Channel>);
@@ -20,6 +24,15 @@ impl Channel {
         self.property("title")
     }
 
+    pub fn image(&self) -> Pixbuf {
+        self.property("image")
+    }
+
+    pub fn set_image(&self, image: &Pixbuf) {
+        self.set_property("image", image);
+        self.notify("image");
+    }
+
     pub fn link(&self) -> String {
         self.property("link")
     }
@@ -36,20 +49,33 @@ impl Channel {
 mod imp {
     use std::cell::RefCell;
 
+    use gdk_pixbuf::Pixbuf;
     use glib::{
         subclass::{prelude::ObjectImpl, types::ObjectSubclass},
         ParamFlags, ParamSpec, ParamSpecGType, ParamSpecString, StaticType, ToValue,
     };
     use once_cell::sync::Lazy;
 
-    use crate::items::ItemsModel;
+    use crate::{channel::DEFAULT_IMAGE, items::ItemsModel};
 
-    #[derive(Default)]
     pub struct Channel {
         pub title: RefCell<String>,
+        pub image: RefCell<Pixbuf>,
         pub link: RefCell<String>,
         pub description: RefCell<String>,
         pub items: ItemsModel,
+    }
+
+    impl Default for Channel {
+        fn default() -> Self {
+            Self {
+                title: Default::default(),
+                image: RefCell::new(Pixbuf::from_resource(DEFAULT_IMAGE).unwrap()),
+                link: Default::default(),
+                description: Default::default(),
+                items: Default::default(),
+            }
+        }
     }
 
     #[glib::object_subclass]
@@ -64,6 +90,9 @@ mod imp {
             static PROPERTIES: Lazy<Vec<ParamSpec>> = Lazy::new(|| {
                 vec![
                     ParamSpecString::builder("title").build(),
+                    ParamSpecGType::builder("image")
+                        .is_a_type(Pixbuf::static_type())
+                        .build(),
                     ParamSpecString::builder("link").build(),
                     ParamSpecString::builder("description").build(),
                     ParamSpecGType::builder("items")
@@ -85,16 +114,16 @@ mod imp {
         ) {
             match pspec.name() {
                 "title" => {
-                    let title = value.get().unwrap();
-                    self.title.replace(title);
+                    self.title.replace(value.get().unwrap());
+                }
+                "image" => {
+                    self.image.replace(value.get().unwrap());
                 }
                 "link" => {
-                    let link = value.get().unwrap();
-                    self.link.replace(link);
+                    self.link.replace(value.get().unwrap());
                 }
                 "description" => {
-                    let description = value.get().unwrap();
-                    self.description.replace(description);
+                    self.description.replace(value.get().unwrap());
                 }
                 _ => unimplemented!(),
             }
@@ -103,6 +132,7 @@ mod imp {
         fn property(&self, _obj: &Self::Type, _id: usize, pspec: &ParamSpec) -> glib::Value {
             match pspec.name() {
                 "title" => self.title.borrow().to_value(),
+                "image" => self.image.borrow().to_value(),
                 "link" => self.link.borrow().to_value(),
                 "description" => self.description.borrow().to_value(),
                 "items" => self.items.to_value(),
