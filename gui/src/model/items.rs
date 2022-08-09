@@ -1,7 +1,7 @@
 use gio::traits::ListModelExt;
 use glib::subclass::types::ObjectSubclassIsExt;
 
-use crate::Item;
+use crate::model::Item;
 
 glib::wrapper! {
     pub struct ItemsModel(ObjectSubclass<imp::ItemsModel>)
@@ -73,7 +73,7 @@ mod imp {
     use gio::subclass::prelude::{ListModelImpl, ObjectImpl};
     use glib::{subclass::types::ObjectSubclass, Cast, StaticType};
 
-    use crate::Item;
+    use crate::model::Item;
 
     #[derive(Default)]
     pub struct ItemsModel(pub RefCell<Vec<Item>>);

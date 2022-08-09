@@ -5,10 +5,19 @@ edition = "2021"
 
 [dependencies]
 gdk-pixbuf = "0.15.11"
+once_cell = "1.13.0"
 
 [dependencies.gtk]
 package = "gtk4"
 version = "0.4.8"
+
+[dependencies.glib]
+version = "0.15.12"
+features = ["v2_66"]
+
+[dependencies.gio]
+version = "0.15.12"
+features = ["v2_66"]
 
 [dependencies.adw]
 package = "libadwaita"

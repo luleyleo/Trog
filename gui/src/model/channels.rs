@@ -1,7 +1,7 @@
 use gio::traits::ListModelExt;
 use glib::subclass::types::ObjectSubclassIsExt;
 
-use crate::Channel;
+use crate::model::Channel;
 
 glib::wrapper! {
     pub struct ChannelsModel(ObjectSubclass<imp::ChannelsModel>)
@@ -47,7 +47,7 @@ mod imp {
     use gio::subclass::prelude::{ListModelImpl, ObjectImpl};
     use glib::{subclass::types::ObjectSubclass, Cast, StaticType};
 
-    use crate::Channel;
+    use crate::model::Channel;
 
     #[derive(Default)]
     pub struct ChannelsModel(pub RefCell<Vec<Channel>>);

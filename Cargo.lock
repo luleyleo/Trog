@@ -638,8 +638,10 @@ dependencies = [
  "feeds",
  "gdk-pixbuf",
  "gio",
+ "glib",
  "gtk4",
  "libadwaita",
+ "once_cell",
  "storage",
 ]
 
@@ -1136,12 +1138,6 @@ dependencies = [
 [[package]]
 name = "storage"
 version = "0.1.0"
-dependencies = [
- "gdk-pixbuf",
- "gio",
- "glib",
- "once_cell",
-]
 
 [[package]]
 name = "strsim"

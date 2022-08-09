@@ -1,6 +1,6 @@
 use glib::ObjectExt;
 
-use crate::{ChannelsModel, ItemsModel};
+use crate::model::{ChannelsModel, ItemsModel};
 
 glib::wrapper! {
     pub struct AppModel(ObjectSubclass<imp::AppModel>);
@@ -33,11 +33,11 @@ impl AppModel {
 mod imp {
     use std::cell::RefCell;
 
-    use gio::subclass::prelude::{ObjectImpl, ObjectSubclass};
     use glib::{ParamFlags, ParamSpec, ParamSpecGType, ParamSpecString, StaticType, ToValue};
+    use gtk::gio::subclass::prelude::{ObjectImpl, ObjectSubclass};
     use once_cell::sync::Lazy;
 
-    use crate::{ChannelsModel, ItemsModel};
+    use crate::model::{ChannelsModel, ItemsModel};
 
     #[derive(Default)]
     pub struct AppModel {

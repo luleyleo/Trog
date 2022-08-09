@@ -1,7 +1,7 @@
 use gdk_pixbuf::Pixbuf;
 use glib::ObjectExt;
 
-use crate::items::ItemsModel;
+use crate::model::ItemsModel;
 
 const DEFAULT_IMAGE: &str =
     "/de/leopoldluley/trog/icons/scalable/actions/application-rss-symbolic.svg";
@@ -56,7 +56,7 @@ mod imp {
     };
     use once_cell::sync::Lazy;
 
-    use crate::{channel::DEFAULT_IMAGE, items::ItemsModel};
+    use crate::{model::channel::DEFAULT_IMAGE, model::ItemsModel};
 
     pub struct Channel {
         pub title: RefCell<String>,

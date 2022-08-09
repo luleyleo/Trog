@@ -5,9 +5,9 @@ use gdk_pixbuf::{
     Pixbuf,
 };
 use gtk::glib::{clone, BindingFlags};
-use storage::AppModel;
 
 mod futures;
+mod model;
 
 fn main() {
     gtk::init().unwrap();
@@ -29,10 +29,10 @@ fn escape_markdown(mrkd: String) -> String {
         .replace('"', "&quot;")
 }
 
-fn fetch_model() -> storage::Channel {
+fn fetch_model() -> model::Channel {
     let rss_channel = futures::block_on(feeds::fetch_channel(feeds::DEMO_URL)).unwrap();
 
-    let channel = storage::Channel::new(
+    let channel = model::Channel::new(
         &rss_channel.title,
         &rss_channel.link,
         &rss_channel.description,
@@ -46,7 +46,7 @@ fn fetch_model() -> storage::Channel {
     }
 
     for rss_item in rss_channel.items {
-        let item = storage::Item::new(&rss_item.title, &rss_item.link);
+        let item = model::Item::new(&rss_item.title, &rss_item.link);
         channel.items().append(&item);
     }
 
@@ -72,7 +72,7 @@ fn load_resources(_app: &adw::Application) {
 }
 
 fn setup(app: &adw::Application) {
-    let model = AppModel::default();
+    let model = model::AppModel::default();
     model.channels().append(&fetch_model());
 
     let leaflet = adw::Leaflet::new();
@@ -91,7 +91,7 @@ fn setup(app: &adw::Application) {
     window.show();
 }
 
-fn list_channels(leaflet: &adw::Leaflet, model: &AppModel) -> impl IsA<gtk::Widget> {
+fn list_channels(leaflet: &adw::Leaflet, model: &model::AppModel) -> impl IsA<gtk::Widget> {
     let row = adw::ActionRow::builder()
         .activatable(true)
         .title("Click me")
@@ -124,7 +124,7 @@ fn list_channels(leaflet: &adw::Leaflet, model: &AppModel) -> impl IsA<gtk::Widg
     list.bind_model(
         Some(&model.channels()),
         clone!(@strong leaflet, @strong model => move |item| {
-            let channel = item.clone().downcast::<storage::Channel>().unwrap();
+            let channel = item.clone().downcast::<model::Channel>().unwrap();
 
             let row = adw::ActionRow::builder()
                 .activatable(true)
@@ -165,7 +165,7 @@ fn list_channels(leaflet: &adw::Leaflet, model: &AppModel) -> impl IsA<gtk::Widg
     content
 }
 
-fn list_items(leaflet: &adw::Leaflet, model: &AppModel) -> impl IsA<gtk::Widget> {
+fn list_items(leaflet: &adw::Leaflet, model: &model::AppModel) -> impl IsA<gtk::Widget> {
     let row = adw::ActionRow::builder()
         .activatable(true)
         .title("Click me")
@@ -202,7 +202,7 @@ fn list_items(leaflet: &adw::Leaflet, model: &AppModel) -> impl IsA<gtk::Widget>
         .build();
 
     list.bind_model(Some(&model.items()), |item| {
-        let item = item.clone().downcast::<storage::Item>().unwrap();
+        let item = item.clone().downcast::<model::Item>().unwrap();
 
         let toggle = gtk::CheckButton::builder()
             .css_classes(vec!["read-toggle".into()])
