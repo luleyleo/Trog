@@ -35,9 +35,35 @@ impl ItemsModel {
         self.items_changed(pos, 0, len as u32);
     }
 
+    pub fn extend_from_model(&self, items: &ItemsModel) {
+        let len = items.len();
+        let pos = {
+            let mut data = self.imp().0.borrow_mut();
+            let pos = data.len();
+            data.extend_from_slice(items.imp().0.borrow().as_slice());
+            pos as u32
+        };
+        self.items_changed(pos, 0, len as u32);
+    }
+
     pub fn remove(&self, pos: u32) {
         self.imp().0.borrow_mut().remove(pos as usize);
         self.items_changed(pos, 1, 0);
+    }
+
+    pub fn clear(&self) {
+        let mut data = self.imp().0.borrow_mut();
+        let len = data.len();
+        data.clear();
+        self.items_changed(0, len as u32, 0);
+    }
+
+    pub fn len(&self) -> usize {
+        self.imp().0.borrow().len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 }
 

@@ -1,5 +1,6 @@
 use adw::prelude::*;
-use gtk::glib::BindingFlags;
+use gtk::glib::{clone, BindingFlags};
+use storage::AppModel;
 
 mod futures;
 
@@ -59,10 +60,15 @@ fn load_resources(_app: &adw::Application) {
 }
 
 fn setup(app: &adw::Application) {
+    let model = AppModel::default();
+    model.channels().append(&fetch_model());
+
     let leaflet = adw::Leaflet::new();
-    leaflet.append(&list_channels(&leaflet));
-    leaflet.append(&gtk::Separator::new(gtk::Orientation::Vertical));
-    leaflet.append(&list_items(&leaflet));
+    leaflet.append(&list_channels(&leaflet, &model));
+    leaflet
+        .append(&gtk::Separator::new(gtk::Orientation::Vertical))
+        .set_navigatable(false);
+    leaflet.append(&list_items(&leaflet, &model));
 
     let window = adw::ApplicationWindow::builder()
         .application(app)
@@ -73,10 +79,7 @@ fn setup(app: &adw::Application) {
     window.show();
 }
 
-fn list_channels(leaflet: &adw::Leaflet) -> impl IsA<gtk::Widget> {
-    let model = storage::ChannelsModel::default();
-    model.append(&fetch_model());
-
+fn list_channels(leaflet: &adw::Leaflet, model: &AppModel) -> impl IsA<gtk::Widget> {
     let row = adw::ActionRow::builder()
         .activatable(true)
         .title("Click me")
@@ -92,38 +95,45 @@ fn list_channels(leaflet: &adw::Leaflet) -> impl IsA<gtk::Widget> {
         .icon_name("open-menu-symbolic")
         .build();
 
-    let header = adw::HeaderBar::builder().build();
+    let header = adw::HeaderBar::builder()
+        .title_widget(&gtk::Label::new(None))
+        .build();
     header.pack_start(&add_button);
     header.pack_end(&menu_button);
     leaflet
         .bind_property("folded", &header, "show-end-title-buttons")
+        .flags(BindingFlags::SYNC_CREATE)
         .build();
 
     let list = gtk::ListBox::builder()
         .selection_mode(gtk::SelectionMode::None)
         .build();
 
-    list.bind_model(Some(&model), |item| {
-        let channel = item.clone().downcast::<storage::Channel>().unwrap();
+    list.bind_model(
+        Some(&model.channels()),
+        clone!(@strong leaflet, @strong model => move |item| {
+            let channel = item.clone().downcast::<storage::Channel>().unwrap();
 
-        let row = adw::ActionRow::builder()
-            .activatable(true)
-            .title(&escape_markdown(channel.title()))
-            .subtitle(&escape_markdown(channel.description()))
-            .subtitle_lines(1)
-            .build();
+            let row = adw::ActionRow::builder()
+                .activatable(true)
+                .title(&escape_markdown(channel.title()))
+                .subtitle(&escape_markdown(channel.description()))
+                .subtitle_lines(1)
+                .build();
 
-        row.connect_activated(move |row| {
-            let window = row
-                .root()
-                .unwrap()
-                .downcast::<adw::ApplicationWindow>()
-                .unwrap();
-            gtk::show_uri(Some(&window), &channel.link(), gtk::gdk::CURRENT_TIME);
-        });
+            row.connect_activated(clone!(@strong leaflet, @strong model, @strong channel => move |_| {
+                model.set_title(&channel.title());
+                model.items().clear();
+                model.items().extend_from_model(&channel.items());
 
-        row.upcast()
-    });
+                if leaflet.is_folded() {
+                    leaflet.navigate(adw::NavigationDirection::Forward);
+                }
+            }));
+
+            row.upcast()
+        }),
+    );
 
     let scrolled_list = gtk::ScrolledWindow::builder()
         .hscrollbar_policy(gtk::PolicyType::Never)
@@ -133,7 +143,7 @@ fn list_channels(leaflet: &adw::Leaflet) -> impl IsA<gtk::Widget> {
 
     let content = gtk::Box::builder()
         .orientation(gtk::Orientation::Vertical)
-        .width_request(200)
+        .width_request(250)
         .build();
     content.append(&header);
     content.append(&scrolled_list);
@@ -141,9 +151,7 @@ fn list_channels(leaflet: &adw::Leaflet) -> impl IsA<gtk::Widget> {
     content
 }
 
-fn list_items(leaflet: &adw::Leaflet) -> impl IsA<gtk::Widget> {
-    let model = fetch_model();
-
+fn list_items(leaflet: &adw::Leaflet, model: &AppModel) -> impl IsA<gtk::Widget> {
     let row = adw::ActionRow::builder()
         .activatable(true)
         .title("Click me")
@@ -159,22 +167,21 @@ fn list_items(leaflet: &adw::Leaflet) -> impl IsA<gtk::Widget> {
         .icon_name("view-refresh-symbolic")
         .build();
     let title = gtk::Label::builder()
-        .label(&model.title())
         .css_classes(vec!["title".into()])
         .build();
+    model.bind_property("title", &title, "label").build();
 
     let header = adw::HeaderBar::builder().title_widget(&title).build();
     header.pack_start(&back_button);
     header.pack_end(&refresh_button);
 
     leaflet
-        .bind_property("folded", &header, "show-end-title-buttons")
-        .flags(BindingFlags::INVERT_BOOLEAN | BindingFlags::SYNC_CREATE)
-        .build();
-    leaflet
         .bind_property("folded", &back_button, "visible")
         .flags(BindingFlags::SYNC_CREATE)
         .build();
+    back_button.connect_clicked(clone!(@strong leaflet => move |_| {
+        leaflet.navigate(adw::NavigationDirection::Back);
+    }));
 
     let list = gtk::ListBox::builder()
         .selection_mode(gtk::SelectionMode::None)

@@ -42,7 +42,7 @@ mod imp {
     };
     use once_cell::sync::Lazy;
 
-    use crate::{items::ItemsModel, Item};
+    use crate::items::ItemsModel;
 
     #[derive(Default)]
     pub struct Channel {
@@ -67,7 +67,7 @@ mod imp {
                     ParamSpecString::builder("link").build(),
                     ParamSpecString::builder("description").build(),
                     ParamSpecGType::builder("items")
-                        .is_a_type(Item::static_type())
+                        .is_a_type(ItemsModel::static_type())
                         .flags(ParamFlags::READABLE)
                         .build(),
                 ]
